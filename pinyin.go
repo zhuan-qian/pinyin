@@ -1,9 +1,6 @@
 package pinyin
 
 import (
-	"bufio"
-	"io"
-	"net/http"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -57,63 +54,47 @@ func init() {
 		}
 	}
 
-	f, err := getFileContent()
-	defer f.Close()
-	if err != nil {
-		initialized = false
-		return
-	}
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		strs := strings.Split(scanner.Text(), "=>")
-		if len(strs) < 2 {
-			continue
-		}
-		i, err := strconv.ParseInt(strs[0], 16, 32)
+	for k, v := range resource {
+		i, err := strconv.ParseInt(k, 16, 32)
 		if err != nil {
 			continue
 		}
-		pinyinMap[rune(i)] = strs[1]
+		pinyinMap[rune(i)] = v
 	}
 	initialized = true
 }
 
-func getFileContent()(io.ReadCloser, error){
-	resp, err := http.Get("https://raw.githubusercontent.com/chain-zhang/pinyin/master/pinyin.txt")
-    return resp.Body, err
-}
-
 func New(origin string) *pinyin {
 	return &pinyin{
-		origin:origin,
-		split: " ",
-		mode:WithoutTone,
+		origin: origin,
+		split:  " ",
+		mode:   WithoutTone,
 	}
 }
 
-func (py *pinyin)Split(split string) *pinyin  {
+func (py *pinyin) Split(split string) *pinyin {
 	py.split = split
 	return py
 }
 
-func (py *pinyin)Mode (mode Mode) *pinyin  {
+func (py *pinyin) Mode(mode Mode) *pinyin {
 	py.mode = mode
 	return py
 }
 
-func (py *pinyin)Convert() (string, error) {
+func (py *pinyin) Convert() (string, error) {
 	if !initialized {
 		return "", ErrInitialize
 	}
 
 	sr := []rune(py.origin)
 	words := make([]string, 0)
-	for _, s := range sr{
+	for _, s := range sr {
 		word, err := getPinyin(s, py.mode)
 		if err != nil {
 			return "", err
 		}
-		if len(word) > 0{
+		if len(word) > 0 {
 			words = append(words, word)
 		}
 	}
@@ -129,7 +110,7 @@ func getPinyin(hanzi rune, mode Mode) (string, error) {
 	case Tone:
 		return getTone(hanzi), nil
 	case InitialsInCapitals:
-        return getInitialsInCapitals(hanzi), nil
+		return getInitialsInCapitals(hanzi), nil
 	default:
 		return getDefault(hanzi), nil
 	}
@@ -142,7 +123,7 @@ func getTone(hanzi rune) string {
 func getDefault(hanzi rune) string {
 	tone := getTone(hanzi)
 
-	if tone == ""{
+	if tone == "" {
 		return tone
 	}
 
@@ -163,7 +144,7 @@ func getDefault(hanzi rune) string {
 
 func getInitialsInCapitals(hanzi rune) string {
 	def := getDefault(hanzi)
-	if def == ""{
+	if def == "" {
 		return def
 	}
 	sr := []rune(def)
